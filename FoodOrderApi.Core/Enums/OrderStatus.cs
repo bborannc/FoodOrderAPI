@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace FoodOrderApi.Core.Enums
+﻿namespace FoodOrderApi.Core.Enums
 {
-    internal class OrderStatus
+    public enum OrderStatus
     {
+        Pending = 1,    // Sipariş Alındı
+        Preparing = 2,  // Hazırlanıyor
+        OnTheWay = 3,   // Yolda
+        Delivered = 4,  // Teslim Edildi
+        Cancelled = 5   // İptal Edildi
     }
 }

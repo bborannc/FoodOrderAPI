@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace FoodOrderApi.Core.Entities
+﻿namespace FoodOrderApi.Core.Entities
 {
-    internal class Restaurant
+    public class Restaurant : BaseEntity
     {
+        public string Name { get; set; } = null!;
+        public string Address { get; set; } = null!;
+        public string PhoneNumber { get; set; } = null!;
+        public bool IsActive { get; set; } = true;
+
+        // Navigation Property: Bire-Çok (1:N) İlişki
+        public ICollection<MenuItem> MenuItems { get; set; } = new List<MenuItem>();
     }
 }
