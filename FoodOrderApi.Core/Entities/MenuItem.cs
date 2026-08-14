@@ -2,14 +2,19 @@
 {
     public class MenuItem : BaseEntity
     {
-        public int RestaurantId { get; set; }
-        public int CategoryId { get; set; }
-        public string Name { get; set; } = null!;
-        public string Description { get; set; } = null!;
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
         public decimal Price { get; set; }
 
-        // Navigation Properties
-        public Restaurant Restaurant { get; set; } = null!;
-        public Category Category { get; set; } = null!;
+        // EKLENEN ALANLAR:
+        public string? ImageUrl { get; set; }
+        public bool IsAvailable { get; set; } = true;
+
+        // İlişkiler (Foreign Keys & Navigation Properties)
+        public int RestaurantId { get; set; }
+        public Restaurant? Restaurant { get; set; }
+
+        public int CategoryId { get; set; }
+        public Category? Category { get; set; }
     }
 }
