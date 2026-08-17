@@ -20,6 +20,8 @@ namespace FoodOrderApi.Core.Entities
         public int RestaurantId { get; set; }
         public Restaurant? Restaurant { get; set; }
 
+        public Review? Review { get; set; }
+
         // Sipariş Kalemleri
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }

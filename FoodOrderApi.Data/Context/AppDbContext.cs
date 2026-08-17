@@ -15,6 +15,8 @@ namespace FoodOrderApi.Data.Context
         public DbSet<Category> Categories { get; set; }
         public DbSet<User> Users { get; set; }
 
+        public DbSet<Review> Reviews => Set<Review>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

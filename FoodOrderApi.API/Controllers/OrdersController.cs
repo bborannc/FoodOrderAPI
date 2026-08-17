@@ -1,4 +1,5 @@
 ﻿using FoodOrderApi.Application.Features.Orders.Commands.CreateOrder;
+using FoodOrderApi.Application.Features.Orders.Commands.CreateOrderReview;
 using FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus;
 using FoodOrderApi.Application.Features.Orders.Queries.GetMyOrders;
 using FoodOrderApi.Application.Features.Orders.Queries.GetOrdersByRestaurantId;
@@ -6,6 +7,7 @@ using FoodOrderApi.Core.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace FoodOrderApi.API.Controllers
 {
@@ -56,6 +58,23 @@ namespace FoodOrderApi.API.Controllers
             if (response.StatusCode == 204)
                 return NoContent();
 
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("{orderId}/review")]
+        [Authorize(Roles = "Customer,Admin")]
+        public async Task<IActionResult> CreateOrderReview(
+        [FromRoute] int orderId,
+        [FromBody] CreateOrderReviewCommand command)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            command.OrderId = orderId;
+            command.UserId = int.Parse(userIdClaim);
+
+            var response = await _mediator.Send(command);
             return StatusCode(response.StatusCode, response);
         }
     }

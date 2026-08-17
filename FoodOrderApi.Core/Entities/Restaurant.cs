@@ -9,5 +9,7 @@
 
         // Navigation Property: Bire-Çok (1:N) İlişki
         public ICollection<MenuItem> MenuItems { get; set; } = new List<MenuItem>();
+
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }
