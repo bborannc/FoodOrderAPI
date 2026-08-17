@@ -1,27 +1,44 @@
 using System.Text;
+using FoodOrderApi.API.Extensions;
 using FoodOrderApi.API.Middlewares;
+using FoodOrderApi.API.Services;           // <-- EKLENDİ
 using FoodOrderApi.Application;
-using FoodOrderApi.Application.Security;
+using FoodOrderApi.Application.Security;   // <-- EKLENDİ
 using FoodOrderApi.Data.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using FoodOrderApi.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Controller ve Application Katmanı Servis Kayıtları
+// 1. CORS Politikası
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// 2. Controller ve Application Katmanı Servis Kayıtları
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(Program).Assembly);
+
 builder.Services.AddApplicationServices();
 
-// 2. JwtSettings Options Pattern Kaydı
+// HttpContext ve CurrentUserService DI Kaydı (EKLENDİ)
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// 3. JwtSettings Options Pattern Kaydı
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
 
-// 3. JWT Kimlik Doğrulama (Authentication)
+// 4. JWT Kimlik Doğrulama
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -42,14 +59,14 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 4. DbContext DI Kaydı
+// 5. DbContext DI Kaydı
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
     options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
 
-// 5. Swagger ve JWT Kilit İkonu (Authorize Butonu) Yapılandırması
+// 6. Swagger ve JWT Kilit İkonu
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -85,22 +102,20 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 6. Global Hata Yakalama Middleware'i
+// Otomatik Migration
+await app.ApplyMigrationsAsync();
+
+// Global Hata Middleware'i
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-using var scope = app.Services.CreateScope();
-var services = scope.ServiceProvider;
-var dbContext = services.GetRequiredService<AppDbContext>();
-dbContext.Database.MigrateAsync().Wait();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
-// Sıralama önemlidir: Önce Authentication, sonra Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 

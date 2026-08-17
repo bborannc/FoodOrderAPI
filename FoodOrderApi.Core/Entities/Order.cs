@@ -1,16 +1,25 @@
 ﻿using FoodOrderApi.Core.Enums;
+using FoodOrderApi.Core.ValueObjects;
 
 namespace FoodOrderApi.Core.Entities
 {
     public class Order : BaseEntity
     {
-        public int UserId { get; set; } // Siparişi veren kullanıcının Id'si
-        public string DeliveryAddress { get; set; } = null!;
         public decimal TotalPrice { get; set; }
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
-        // Navigation Properties
-        public User User { get; set; } = null!;
+        // Value Object olarak Teslimat Adresi
+        public Address DeliveryAddress { get; set; } = new();
+
+        // Kullanıcı İlişkisi
+        public int UserId { get; set; }
+        public User? User { get; set; }
+
+        // Restoran İlişkisi
+        public int RestaurantId { get; set; }
+        public Restaurant? Restaurant { get; set; }
+
+        // Sipariş Kalemleri
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }
