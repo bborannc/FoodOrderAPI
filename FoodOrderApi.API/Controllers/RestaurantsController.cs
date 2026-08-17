@@ -1,4 +1,5 @@
 ﻿using FoodOrderApi.Application.Features.Restaurants.Commands.CreateRestaurant;
+using FoodOrderApi.Application.Features.Restaurants.Queries.GetRestaurantReviews;
 using FoodOrderApi.Application.Features.Restaurants.Queries.GetRestaurants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -29,6 +30,18 @@ namespace FoodOrderApi.API.Controllers
         public async Task<IActionResult> Create([FromBody] CreateRestaurantCommand command)
         {
             var response = await _mediator.Send(command);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("{restaurantId}/reviews")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetRestaurantReviews(int restaurantId)
+        {
+            var response = await _mediator.Send(new GetRestaurantReviewsQuery(restaurantId));
+
+            if (response.StatusCode == 204)
+                return NoContent();
+
             return StatusCode(response.StatusCode, response);
         }
     }
