@@ -1,36 +1,45 @@
 ﻿using FluentValidation;
 using FoodOrderApi.Application.Features.Orders.Dtos;
-using FoodOrderApi.Application.Security;
 using FoodOrderApi.Core.Dtos;
 using FoodOrderApi.Data.Context;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace FoodOrderApi.Application.Features.Orders.Queries.GetMyOrders
+namespace FoodOrderApi.Application.Features.Orders.Queries.GetOrdersByRestaurantId
 {
-    public class GetMyOrdersQueryHandler : IRequestHandler<GetMyOrdersQuery, CustomResponseDto<List<OrderDto>>>
+    public class GetOrdersByRestaurantIdQueryHandler : IRequestHandler<GetOrdersByRestaurantIdQuery, CustomResponseDto<List<OrderDto>>>
     {
         private readonly AppDbContext _context;
-        private readonly ICurrentUserService _currentUserService;
 
-        public GetMyOrdersQueryHandler(AppDbContext context, ICurrentUserService currentUserService)
+        public GetOrdersByRestaurantIdQueryHandler(AppDbContext context)
         {
             _context = context;
-            _currentUserService = currentUserService;
         }
 
-        public async Task<CustomResponseDto<List<OrderDto>>> Handle(GetMyOrdersQuery request, CancellationToken cancellationToken)
+        public async Task<CustomResponseDto<List<OrderDto>>> Handle(GetOrdersByRestaurantIdQuery request, CancellationToken cancellationToken)
         {
-            var userId = _currentUserService.UserId;
-            if (!userId.HasValue)
-                throw new ValidationException("Kullanıcı kimliği doğrulanamadı.");
+            var restaurantExists = await _context.Restaurants
+                .AnyAsync(r => r.Id == request.RestaurantId && !r.IsDeleted, cancellationToken);
 
-            var orders = await _context.Orders
+            if (!restaurantExists)
+                throw new ValidationException("Belirtilen restoran bulunamadı.");
+
+            // 1. Temel sorgu
+            var query = _context.Orders
                 .AsNoTracking()
+                .Where(o => o.RestaurantId == request.RestaurantId && !o.IsDeleted);
+
+            // 2. Opsiyonel Durum Filtresi
+            if (request.Status.HasValue)
+            {
+                query = query.Where(o => o.Status == request.Status.Value);
+            }
+
+            // 3. Projeksiyon ve Listeleme
+            var orders = await query
                 .Include(o => o.Restaurant)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.MenuItem)
-                .Where(o => o.UserId == userId.Value && !o.IsDeleted)
                 .OrderByDescending(o => o.CreatedDate)
                 .Select(o => new OrderDto
                 {
@@ -39,8 +48,8 @@ namespace FoodOrderApi.Application.Features.Orders.Queries.GetMyOrders
                     RestaurantName = o.Restaurant != null ? o.Restaurant.Name : string.Empty,
                     TotalPrice = o.TotalPrice,
                     Status = o.Status,
-                    CreatedDate = o.CreatedDate,
                     CancellationReason = o.CancellationReason,
+                    CreatedDate = o.CreatedDate,
                     DeliveryAddress = new AddressDto
                     {
                         City = o.DeliveryAddress.City,

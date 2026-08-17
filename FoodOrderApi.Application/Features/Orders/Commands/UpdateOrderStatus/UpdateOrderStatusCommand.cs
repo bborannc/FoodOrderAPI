@@ -6,7 +6,8 @@ using MediatR;
 namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
 {
     public record UpdateOrderStatusCommand(
-        OrderStatus Status
+        OrderStatus Status,
+        string? Reason = null
     ) : IRequest<CustomResponseDto<NoContentDto>>
     {
         [JsonIgnore]

@@ -1,6 +1,8 @@
 ﻿using FoodOrderApi.Application.Features.Orders.Commands.CreateOrder;
 using FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus;
 using FoodOrderApi.Application.Features.Orders.Queries.GetMyOrders;
+using FoodOrderApi.Application.Features.Orders.Queries.GetOrdersByRestaurantId;
+using FoodOrderApi.Core.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +43,20 @@ namespace FoodOrderApi.API.Controllers
             command.OrderId = orderId;
             var result = await _mediator.Send(command);
             return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("restaurant/{restaurantId}")]
+        [Authorize(Roles = "RestaurantOwner,Admin")]
+        public async Task<IActionResult> GetOrdersByRestaurant(
+        [FromRoute] int restaurantId,
+        [FromQuery] OrderStatus? status = null)
+        {
+            var response = await _mediator.Send(new GetOrdersByRestaurantIdQuery(restaurantId, status));
+
+            if (response.StatusCode == 204)
+                return NoContent();
+
+            return StatusCode(response.StatusCode, response);
         }
     }
 }

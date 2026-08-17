@@ -7,6 +7,7 @@ namespace FoodOrderApi.Core.Entities
     {
         public decimal TotalPrice { get; set; }
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
+        public string? CancellationReason { get; set; }
 
         // Value Object olarak Teslimat Adresi
         public Address DeliveryAddress { get; set; } = new();

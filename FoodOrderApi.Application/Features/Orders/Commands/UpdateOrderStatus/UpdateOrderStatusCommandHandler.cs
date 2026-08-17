@@ -24,18 +24,18 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
             if (order == null)
                 throw new ValidationException("Güncellenecek sipariş bulunamadı.");
 
-            // 1. Zaten iptal edilmiş veya teslim edilmiş sipariş üzerinde işlem yapılamaz
             if (order.Status == OrderStatus.Cancelled)
                 throw new ValidationException("İptal edilmiş bir siparişin durumu değiştirilemez.");
 
             if (order.Status == OrderStatus.Delivered)
                 throw new ValidationException("Teslim edilmiş bir siparişin durumu değiştirilemez.");
 
-            // 2. İptal Etme Kuralı: Sadece Hazırlanıyor (Preparing) veya Onay Bekliyor (Pending) aşamasında iptal edilebilir
             if (request.Status == OrderStatus.Cancelled)
             {
                 if (order.Status == OrderStatus.InTransit)
                     throw new ValidationException("Sipariş kuryeye teslim edilmiş ve yola çıkmıştır. Bu aşamadan sonra iptal edilemez.");
+
+                order.CancellationReason = request.Reason ?? "Kullanıcı/Restoran tarafından iptal edildi.";
             }
 
             order.Status = request.Status;

@@ -16,6 +16,7 @@ namespace FoodOrderApi.Data.Configurations
                    .IsRequired();
 
             builder.Property(x => x.Status).IsRequired();
+            builder.Property(x => x.CancellationReason).HasMaxLength(300);
 
             // Value Object (Owned Entity) Yapılandırması
             builder.OwnsOne(x => x.DeliveryAddress, address =>
