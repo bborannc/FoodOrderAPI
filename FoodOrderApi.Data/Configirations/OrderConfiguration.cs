@@ -47,6 +47,13 @@ namespace FoodOrderApi.Data.Configurations
                    .WithOne(x => x.Order)
                    .HasForeignKey(x => x.OrderId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure metodu içine ekleyin:
+            builder.HasOne(x => x.Courier)
+                   .WithMany()
+                   .HasForeignKey(x => x.CourierId)
+                   .OnDelete(DeleteBehavior.Restrict)
+                   .IsRequired(false);
         }
     }
 }

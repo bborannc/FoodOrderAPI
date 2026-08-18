@@ -22,6 +22,9 @@ namespace FoodOrderApi.Core.Entities
 
         public Review? Review { get; set; }
 
+        public int? CourierId { get; set; }
+        public User? Courier { get; set; }
+
         // Sipariş Kalemleri
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
