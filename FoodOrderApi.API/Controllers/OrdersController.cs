@@ -2,6 +2,7 @@
 using FoodOrderApi.Application.Features.Orders.Commands.CreateOrderReview;
 using FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus;
 using FoodOrderApi.Application.Features.Orders.Queries.GetAvailableOrdersForCourier;
+using FoodOrderApi.Application.Features.Orders.Queries.GetMyDeliveries;
 using FoodOrderApi.Application.Features.Orders.Queries.GetMyOrders;
 using FoodOrderApi.Application.Features.Orders.Queries.GetOrdersByRestaurantId;
 using FoodOrderApi.Core.Enums;
@@ -95,6 +96,14 @@ namespace FoodOrderApi.API.Controllers
             command.UserId = int.Parse(userIdClaim);
 
             var response = await _mediator.Send(command);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("courier/my-deliveries")]
+        [Authorize(Roles = "Courier,Admin")]
+        public async Task<IActionResult> GetMyDeliveries([FromQuery] OrderStatus? status = null)
+        {
+            var response = await _mediator.Send(new GetMyDeliveriesQuery(status));
             return StatusCode(response.StatusCode, response);
         }
     }
