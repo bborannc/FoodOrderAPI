@@ -1,6 +1,7 @@
 ﻿using FoodOrderApi.Application.Features.Orders.Commands.CreateOrder;
 using FoodOrderApi.Application.Features.Orders.Commands.CreateOrderReview;
 using FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus;
+using FoodOrderApi.Application.Features.Orders.Queries.GetAvailableOrdersForCourier;
 using FoodOrderApi.Application.Features.Orders.Queries.GetMyOrders;
 using FoodOrderApi.Application.Features.Orders.Queries.GetOrdersByRestaurantId;
 using FoodOrderApi.Core.Enums;
@@ -37,21 +38,32 @@ namespace FoodOrderApi.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        // Sipariş Durumu Güncelleme (Sadece Admin ve Restoran Sahibi)
-        [Authorize(Roles = "Admin,RestaurantOwner")]
         [HttpPatch("{orderId:int}/status")]
         public async Task<IActionResult> UpdateStatus(int orderId, [FromBody] UpdateOrderStatusCommand command)
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(roleClaim))
+                return Unauthorized();
+
             command.OrderId = orderId;
+            command.CurrentUserId = int.Parse(userIdClaim);
+            command.CurrentUserRole = roleClaim;
+
             var result = await _mediator.Send(command);
+
+            if (result.StatusCode == 204)
+                return NoContent();
+
             return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("restaurant/{restaurantId}")]
         [Authorize(Roles = "RestaurantOwner,Admin")]
         public async Task<IActionResult> GetOrdersByRestaurant(
-        [FromRoute] int restaurantId,
-        [FromQuery] OrderStatus? status = null)
+            [FromRoute] int restaurantId,
+            [FromQuery] OrderStatus? status = null)
         {
             var response = await _mediator.Send(new GetOrdersByRestaurantIdQuery(restaurantId, status));
 
@@ -61,11 +73,19 @@ namespace FoodOrderApi.API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpGet("courier/available")]
+        [Authorize(Roles = "Courier,Admin")]
+        public async Task<IActionResult> GetAvailableOrdersForCourier()
+        {
+            var response = await _mediator.Send(new GetAvailableOrdersForCourierQuery());
+            return StatusCode(response.StatusCode, response);
+        }
+
         [HttpPost("{orderId}/review")]
         [Authorize(Roles = "Customer,Admin")]
         public async Task<IActionResult> CreateOrderReview(
-        [FromRoute] int orderId,
-        [FromBody] CreateOrderReviewCommand command)
+            [FromRoute] int orderId,
+            [FromBody] CreateOrderReviewCommand command)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim))

@@ -7,10 +7,16 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
 {
     public record UpdateOrderStatusCommand(
         OrderStatus Status,
-        string? Reason = null
+        string? CancellationReason = null
     ) : IRequest<CustomResponseDto<NoContentDto>>
     {
         [JsonIgnore]
         public int OrderId { get; set; }
+
+        [JsonIgnore]
+        public int CurrentUserId { get; set; }
+
+        [JsonIgnore]
+        public string CurrentUserRole { get; set; } = string.Empty;
     }
 }

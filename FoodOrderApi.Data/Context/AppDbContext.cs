@@ -28,6 +28,7 @@ namespace FoodOrderApi.Data.Context
             modelBuilder.Entity<OrderItem>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<Category>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<User>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<Review>().HasQueryFilter(x => !x.IsDeleted);
 
             base.OnModelCreating(modelBuilder);
         }

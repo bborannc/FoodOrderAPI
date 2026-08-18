@@ -4,6 +4,7 @@ using FoodOrderApi.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodOrderApi.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260818091415_AddIsActiveAndUserIdToRestaurant")]
+    partial class AddIsActiveAndUserIdToRestaurant
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -170,8 +173,8 @@ namespace FoodOrderApi.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CancellationReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<int?>("CourierId")
                         .HasColumnType("int");
@@ -185,11 +188,13 @@ namespace FoodOrderApi.Data.Migrations
                     b.Property<int>("RestaurantId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("RestaurantId1")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<decimal>("TotalPrice")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("UserId")
@@ -200,6 +205,8 @@ namespace FoodOrderApi.Data.Migrations
                     b.HasIndex("CourierId");
 
                     b.HasIndex("RestaurantId");
+
+                    b.HasIndex("RestaurantId1");
 
                     b.HasIndex("UserId");
 
@@ -431,10 +438,14 @@ namespace FoodOrderApi.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("FoodOrderApi.Core.Entities.Restaurant", "Restaurant")
-                        .WithMany("Orders")
+                        .WithMany()
                         .HasForeignKey("RestaurantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("FoodOrderApi.Core.Entities.Restaurant", null)
+                        .WithMany("Orders")
+                        .HasForeignKey("RestaurantId1");
 
                     b.HasOne("FoodOrderApi.Core.Entities.User", "User")
                         .WithMany()
@@ -449,37 +460,44 @@ namespace FoodOrderApi.Data.Migrations
 
                             b1.Property<string>("AddressDirections")
                                 .HasMaxLength(250)
-                                .HasColumnType("nvarchar(250)");
+                                .HasColumnType("nvarchar(250)")
+                                .HasColumnName("DeliveryAddressDirections");
 
                             b1.Property<string>("BuildingNumber")
                                 .IsRequired()
                                 .HasMaxLength(20)
-                                .HasColumnType("nvarchar(20)");
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("DeliveryBuildingNumber");
 
                             b1.Property<string>("City")
                                 .IsRequired()
                                 .HasMaxLength(50)
-                                .HasColumnType("nvarchar(50)");
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("DeliveryCity");
 
                             b1.Property<string>("District")
                                 .IsRequired()
                                 .HasMaxLength(50)
-                                .HasColumnType("nvarchar(50)");
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("DeliveryDistrict");
 
                             b1.Property<string>("DoorNumber")
                                 .IsRequired()
                                 .HasMaxLength(20)
-                                .HasColumnType("nvarchar(20)");
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("DeliveryDoorNumber");
 
                             b1.Property<string>("Neighborhood")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("nvarchar(100)");
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("DeliveryNeighborhood");
 
                             b1.Property<string>("Street")
                                 .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("nvarchar(100)");
+                                .HasMaxLength(150)
+                                .HasColumnType("nvarchar(150)")
+                                .HasColumnName("DeliveryStreet");
 
                             b1.HasKey("OrderId");
 
