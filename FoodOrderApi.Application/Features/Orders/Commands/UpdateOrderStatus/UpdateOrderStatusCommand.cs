@@ -1,10 +1,13 @@
 ﻿using System.Text.Json.Serialization;
+using FoodOrderApi.Application.Security;
+using FoodOrderApi.Core.Constants;
 using FoodOrderApi.Core.Dtos;
 using FoodOrderApi.Core.Enums;
 using MediatR;
 
 namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
 {
+    [HasPermission(Permissions.Orders.UpdateStatus)]
     public record UpdateOrderStatusCommand(
         OrderStatus Status,
         string? CancellationReason = null

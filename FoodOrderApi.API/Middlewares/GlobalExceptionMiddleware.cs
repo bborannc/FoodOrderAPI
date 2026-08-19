@@ -42,6 +42,11 @@ namespace FoodOrderApi.API.Middlewares
                 var errors = validationException.Message.Split(" | ").ToList();
                 response = CustomResponseDto<NoContentDto>.Fail(statusCode, errors);
             }
+            else if (exception is UnauthorizedAccessException unauthorizedException)
+            {
+                statusCode = (int)HttpStatusCode.Forbidden;
+                response = CustomResponseDto<NoContentDto>.Fail(statusCode, unauthorizedException.Message);
+            }
             else
             {
                 response = CustomResponseDto<NoContentDto>.Fail(statusCode, "Sunucuda beklenmeyen bir hata oluştu.");

@@ -1,10 +1,12 @@
 using System.Text;
 using FoodOrderApi.API.Extensions;
 using FoodOrderApi.API.Middlewares;
-using FoodOrderApi.API.Services;           // <-- EKLENDİ
+using FoodOrderApi.API.Services;
 using FoodOrderApi.Application;
-using FoodOrderApi.Application.Security;   // <-- EKLENDİ
+using FoodOrderApi.Application.Behaviors;
+using FoodOrderApi.Application.Security;
 using FoodOrderApi.Data.Context;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -30,9 +32,13 @@ builder.Services.AddControllers()
 
 builder.Services.AddApplicationServices();
 
-// HttpContext ve CurrentUserService DI Kaydı (EKLENDİ)
+// HttpContext ve Güvenlik Servisleri DI Kaydı
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+// MediatR Pipeline Behaviors Kaydı
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
 // 3. JwtSettings Options Pattern Kaydı
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -115,10 +121,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
