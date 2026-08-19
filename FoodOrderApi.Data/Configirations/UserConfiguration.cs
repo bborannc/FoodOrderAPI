@@ -21,7 +21,6 @@ namespace FoodOrderApi.Data.Configurations
             builder.Property(x => x.PasswordHash).IsRequired();
             builder.Property(x => x.PasswordSalt).IsRequired();
 
-            builder.Property(x => x.RefreshToken).HasMaxLength(250);
             builder.Property(x => x.Role).IsRequired();
         }
     }

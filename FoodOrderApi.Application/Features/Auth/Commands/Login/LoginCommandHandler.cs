@@ -39,11 +39,11 @@ namespace FoodOrderApi.Application.Features.Auth.Commands.Login
 
             // 3. JWT Token ve RefreshToken üretiyoruz
             var tokenDto = _tokenService.CreateToken(user);
-
+            /*
             // 4. Refresh Token bilgilerini veritabanına kaydediyoruz
             user.RefreshToken = tokenDto.RefreshToken;
             user.RefreshTokenEndDate = DateTime.UtcNow.AddDays(7); // Refresh token 7 gün geçerli
-
+            */
             await _context.SaveChangesAsync(cancellationToken);
 
             return CustomResponseDto<TokenDto>.Success(200, tokenDto);

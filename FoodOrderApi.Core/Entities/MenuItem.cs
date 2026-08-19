@@ -16,5 +16,8 @@
 
         public int CategoryId { get; set; }
         public Category? Category { get; set; }
+
+        // MenuItem sınıfının içine ekleyin:
+        public ICollection<MenuItemPrice> Prices { get; set; } = new List<MenuItemPrice>();
     }
 }
