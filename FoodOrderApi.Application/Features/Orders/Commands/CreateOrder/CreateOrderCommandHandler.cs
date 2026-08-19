@@ -23,19 +23,27 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.CreateOrder
 
         public async Task<CustomResponseDto<int>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
+            // 1. Kullanıcı Kimlik Doğrulaması
             var userId = _currentUserService.UserId;
             if (!userId.HasValue)
                 throw new ValidationException("Kullanıcı kimliği doğrulanamadı. Lütfen giriş yapınız.");
 
-            var restaurantExists = await _context.Restaurants
-                .AnyAsync(r => r.Id == request.RestaurantId && !r.IsDeleted, cancellationToken);
+            // 2. Restoran Varlık ve Aktiflik Kontrolü
+            var restaurant = await _context.Restaurants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == request.RestaurantId && !r.IsDeleted, cancellationToken);
 
-            if (!restaurantExists)
-                throw new ValidationException("Belirtilen restoran bulunamadı.");
+            if (restaurant == null)
+                throw new ValidationException($"'{request.RestaurantId}' numaralı restoran bulunamadı.");
 
+            if (!restaurant.IsActive)
+                throw new ValidationException($"'{restaurant.Name}' şu anda sipariş kabul etmemektedir (Restoran kapalı/pasif).");
+
+            // 3. Menü Ürünleri Kontrolü
             var requestedMenuItemIds = request.Items.Select(i => i.MenuItemId).Distinct().ToList();
 
             var menuItems = await _context.MenuItems
+                .AsNoTracking()
                 .Where(m => requestedMenuItemIds.Contains(m.Id) && m.RestaurantId == request.RestaurantId && !m.IsDeleted)
                 .ToListAsync(cancellationToken);
 
@@ -46,6 +54,7 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.CreateOrder
             if (unavailableItem != null)
                 throw new ValidationException($"'{unavailableItem.Name}' şu anda satışta değildir.");
 
+            // 4. Kalem Hesaplama
             decimal totalPrice = 0;
             var orderItems = new List<OrderItem>();
 
@@ -62,10 +71,12 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.CreateOrder
                 });
             }
 
+            // 5. Sipariş Nesnesini Oluşturma
             var order = new Order
             {
                 UserId = userId.Value,
                 RestaurantId = request.RestaurantId,
+                Restaurant = null, // EF Core'un yeni restoran üretmesini garanti seviyesinde engellemek için null atanır
                 TotalPrice = totalPrice,
                 Status = OrderStatus.Pending,
                 DeliveryAddress = new Address
