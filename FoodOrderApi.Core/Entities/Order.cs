@@ -18,7 +18,7 @@ namespace FoodOrderApi.Core.Entities
 
         // Restoran İlişkisi
         public int RestaurantId { get; set; }
-        public virtual Restaurant Restaurant { get; set; } = new Restaurant();
+        public virtual Restaurant Restaurant { get; set; } = null!;
 
         public Review? Review { get; set; }
 

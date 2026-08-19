@@ -38,7 +38,7 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
 // MediatR Pipeline Behaviors Kaydı
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+//builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
 // 3. JwtSettings Options Pattern Kaydı
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));

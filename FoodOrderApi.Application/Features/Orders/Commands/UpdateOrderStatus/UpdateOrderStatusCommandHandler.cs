@@ -28,22 +28,17 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
             if (order.Status == request.Status)
                 throw new ValidationException($"Sipariş zaten '{order.Status}' durumundadır.");
 
-            // Tamamlanmış veya iptal edilmiş siparişin durumu değiştirilemez
             if (order.Status == OrderStatus.Delivered || order.Status == OrderStatus.Cancelled)
                 throw new ValidationException("Teslim edilmiş veya iptal edilmiş siparişlerin durumu değiştirilemez.");
 
-            // -------------------------------------------------------------
-            // Rol Bazlı Durum Geçiş Kuralları (State Machine Constraints)
-            // -------------------------------------------------------------
+            // Rol Bazlı Durum Geçiş Kuralları
             var role = request.CurrentUserRole;
 
-            if (role == nameof(UserRole.Courier))
+            if (string.Equals(role, nameof(UserRole.Courier), StringComparison.OrdinalIgnoreCase))
             {
-                // Kurye sadece InTransit (3) ve Delivered (4) yapabilir
                 if (request.Status != OrderStatus.InTransit && request.Status != OrderStatus.Delivered)
                     throw new ValidationException("Kuryeler siparişi yalnızca 'Kuryede/Yolda' veya 'Teslim Edildi' durumuna geçirebilir.");
 
-                // 2 -> 3 (Siparişi Teslim Alma / Yola Çıkma)
                 if (request.Status == OrderStatus.InTransit)
                 {
                     if (order.Status != OrderStatus.Preparing)
@@ -55,7 +50,6 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
                     order.CourierId = request.CurrentUserId;
                 }
 
-                // 3 -> 4 (Müşteriye Teslim Etme)
                 if (request.Status == OrderStatus.Delivered)
                 {
                     if (order.Status != OrderStatus.InTransit)
@@ -65,26 +59,23 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
                         throw new ValidationException("Bu sipariş sizin üzerinize zimmetli değil, teslim edemezsiniz.");
                 }
             }
-            else if (role == nameof(UserRole.RestaurantOwner))
+            else if (string.Equals(role, nameof(UserRole.RestaurantOwner), StringComparison.OrdinalIgnoreCase))
             {
                 // Restoran sahibi yalnızca kendi restoranının siparişini yönetebilir
-                if (order.Restaurant != null && order.Restaurant.UserId != request.CurrentUserId)
-                    throw new ValidationException("Bu siparişi yönetme yetkiniz bulunmamaktadır.");
+                if (order.Restaurant == null || order.Restaurant.UserId != request.CurrentUserId)
+                    throw new ValidationException($"Bu siparişi yönetme yetkiniz bulunmamaktadır. (Sipariş Restoran Sahibi ID: {order.Restaurant?.UserId ?? 0}, Sizin ID: {request.CurrentUserId})");
 
-                // Restoran sahibi InTransit veya Delivered yapamaz
                 if (request.Status == OrderStatus.InTransit || request.Status == OrderStatus.Delivered)
                     throw new ValidationException("Siparişi yola çıkarma ve teslim etme yetkisi yalnızca Kuryelere aittir.");
 
-                // Restoran sahibi Pending -> Preparing veya İptal yapabilir
                 if (request.Status == OrderStatus.Preparing && order.Status != OrderStatus.Pending)
                     throw new ValidationException("Yalnızca 'Bekleyen' siparişler 'Hazırlanıyor' durumuna alınabilir.");
 
                 if (request.Status == OrderStatus.Cancelled && (order.Status == OrderStatus.InTransit || order.Status == OrderStatus.Delivered))
                     throw new ValidationException("Yola çıkmış veya teslim edilmiş siparişler iptal edilemez.");
             }
-            else if (role == nameof(UserRole.Customer))
+            else if (string.Equals(role, nameof(UserRole.Customer), StringComparison.OrdinalIgnoreCase))
             {
-                // Müşteri yalnızca henüz hazırlanmaya başlamamış siparişini iptal edebilir
                 if (request.Status != OrderStatus.Cancelled)
                     throw new ValidationException("Müşteriler sipariş durumunu yalnızca iptal edebilir.");
 
@@ -94,9 +85,7 @@ namespace FoodOrderApi.Application.Features.Orders.Commands.UpdateOrderStatus
                 if (order.Status != OrderStatus.Pending)
                     throw new ValidationException("Hazırlanmaya başlanmış veya yola çıkmış siparişler müşteri tarafından iptal edilemez.");
             }
-            // Admin için tüm geçişler serbesttir
 
-            // İptal gerekçesi yönetimi
             if (request.Status == OrderStatus.Cancelled)
             {
                 order.CancellationReason = string.IsNullOrWhiteSpace(request.CancellationReason)

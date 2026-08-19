@@ -31,6 +31,14 @@ namespace FoodOrderApi.Application.Behaviors
                 throw new UnauthorizedAccessException("Bu işlem için oturum açmanız gerekmektedir.");
             }
 
+            var userPermissions = _currentUserService.Permissions;
+
+            var hasAccess = requiredPermissions.All(p => userPermissions.Contains(p));
+            if (!hasAccess)
+            {
+                throw new UnauthorizedAccessException("Bu işlemi gerçekleştirmek için yetkiniz bulunmamaktadır.");
+            }
+
             return await next();
         }
     }

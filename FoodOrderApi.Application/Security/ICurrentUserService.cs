@@ -5,5 +5,6 @@
         int? UserId { get; }
         string? Email { get; }
         string? Role { get; }
+        List<string> Permissions { get; }
     }
 }

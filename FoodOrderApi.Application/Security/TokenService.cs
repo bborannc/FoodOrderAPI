@@ -2,24 +2,26 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using FoodOrderApi.Core.Constants;
 using FoodOrderApi.Core.Entities;
-using Microsoft.Extensions.Options;
+using FoodOrderApi.Core.Enums;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FoodOrderApi.Application.Security
 {
     public class TokenService : ITokenService
     {
-        private readonly JwtSettings _jwtSettings;
+        private readonly IConfiguration _configuration;
 
-        public TokenService(IOptions<JwtSettings> jwtSettings)
+        public TokenService(IConfiguration configuration)
         {
-            _jwtSettings = jwtSettings.Value;
+            _configuration = configuration;
         }
 
         public TokenDto CreateToken(User user)
         {
-            // 1. Token içine gömülecek Kullanıcı Bilgileri (Claims)
+            // 1. Temel Kullanıcı Claim'leri
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -28,40 +30,89 @@ namespace FoodOrderApi.Application.Security
                 new Claim(ClaimTypes.Role, user.Role.ToString())
             };
 
-            // 2. Gizli Anahtar ve İmzalama Algoritması
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-            var expiration = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationInMinutes);
+            // 2. Rol Bazlı İzin (Permission) Claim'leri
+            claims.AddRange(GetPermissionsForRole(user.Role));
 
-            // 3. Token Tanımlayıcısı
+            // 3. Konfigürasyondan Key ve Parametreleri Oku
+            var secretKey = _configuration["JwtSettings:SecretKey"] ?? _configuration["JwtSettings:SecurityKey"]!;
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
+
+            var expirationMinutes = Convert.ToInt32(_configuration["JwtSettings:AccessTokenExpirationMinutes"] ?? "60");
+            var expirationDate = DateTime.UtcNow.AddMinutes(expirationMinutes);
+
+            // 4. Token Oluşturma (Tüm claim'ler ClaimsIdentity olarak paketlenir)
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = expiration,
-                Issuer = _jwtSettings.Issuer,
-                Audience = _jwtSettings.Audience,
-                SigningCredentials = creds
+                Expires = expirationDate,
+                SigningCredentials = credentials,
+                Issuer = _configuration["JwtSettings:Issuer"],
+                Audience = _configuration["JwtSettings:Audience"]
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+            var accessToken = tokenHandler.WriteToken(securityToken);
 
-            // 4. AccessToken ve RefreshToken Üreterek Dönüyoruz
+            var refreshToken = CreateRefreshToken();
+
             return new TokenDto
             {
-                AccessToken = tokenHandler.WriteToken(token),
-                AccessTokenExpiration = expiration,
-                RefreshToken = GenerateRefreshToken()
+                AccessToken = accessToken,
+                AccessTokenExpiration = expirationDate,
+                RefreshToken = refreshToken
             };
         }
 
-        // Arka planda Rastgele Güvenli Refresh Token Üretici
-        private static string GenerateRefreshToken()
+        private static string CreateRefreshToken()
         {
-            var randomNumber = new byte[64];
+            var randomNumber = new byte[32];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
+        }
+
+        private static IEnumerable<Claim> GetPermissionsForRole(UserRole role)
+        {
+            var permissions = new List<string>();
+
+            switch (role)
+            {
+                case UserRole.Admin:
+                    permissions.AddRange(new[]
+                    {
+                        Permissions.Orders.View, Permissions.Orders.Create, Permissions.Orders.UpdateStatus, Permissions.Orders.Cancel,
+                        Permissions.MenuItems.View, Permissions.MenuItems.Create, Permissions.MenuItems.Edit, Permissions.MenuItems.Delete,
+                        Permissions.Restaurants.Create, Permissions.Restaurants.Edit, Permissions.Restaurants.Delete
+                    });
+                    break;
+
+                case UserRole.RestaurantOwner:
+                    permissions.AddRange(new[]
+                    {
+                        Permissions.Orders.View, Permissions.Orders.UpdateStatus,
+                        Permissions.MenuItems.View, Permissions.MenuItems.Create, Permissions.MenuItems.Edit, Permissions.MenuItems.Delete
+                    });
+                    break;
+
+                case UserRole.Courier:
+                    permissions.AddRange(new[]
+                    {
+                        Permissions.Orders.View, Permissions.Orders.UpdateStatus
+                    });
+                    break;
+
+                case UserRole.Customer:
+                    permissions.AddRange(new[]
+                    {
+                        Permissions.Orders.View, Permissions.Orders.Create, Permissions.Orders.Cancel,
+                        Permissions.MenuItems.View
+                    });
+                    break;
+            }
+
+            return permissions.Select(p => new Claim("permission", p));
         }
     }
 }

@@ -1,7 +1,5 @@
 ﻿using System.Reflection;
-using FluentValidation;
-using FoodOrderApi.Application.Behaviors; 
-using FoodOrderApi.Application.Security;
+using FoodOrderApi.Application.Behaviors;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,20 +9,13 @@ namespace FoodOrderApi.Application
     {
         public static void AddApplicationServices(this IServiceCollection services)
         {
-            var assembly = Assembly.GetExecutingAssembly();
-
-            // MediatR Kaydı
             services.AddMediatR(cfg =>
             {
-                cfg.RegisterServicesFromAssembly(assembly);
-                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
+                cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+
+                // Pipeline Behavior'ı MediatR hattına açık generic olarak ekliyoruz:
+                cfg.AddOpenBehavior(typeof(AuthorizationBehavior<,>));
             });
-
-            // FluentValidation Kaydı
-            services.AddValidatorsFromAssembly(assembly);
-
-            // JWT Token Servis Kaydı
-            services.AddScoped<ITokenService, TokenService>();
         }
     }
 }
